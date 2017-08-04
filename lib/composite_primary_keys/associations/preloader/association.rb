@@ -8,7 +8,7 @@ module ActiveRecord
           predicate = cpk_in_predicate(table, reflection.foreign_key, ids)
           scope.where(predicate)
         end
-        
+
         def associated_records_by_owner
           # CPK
           owners_map = owners_by_key
@@ -34,7 +34,7 @@ module ActiveRecord
             # CPK
             # owner_key = record[association_key_name].to_s
             owner_key = Array(association_key_name).map do |key_name|
-              record[key_name]
+              record[key_name].to_s.downcase
             end.join(CompositePrimaryKeys::ID_SEP)
 
             owners_map[owner_key].each do |owner|
@@ -49,7 +49,7 @@ module ActiveRecord
             # CPK
             # key = owner[owner_key_name]
             key = Array(owner_key_name).map do |key_name|
-              owner[key_name]
+              owner[key_name].to_s.downcase
             end
             # CPK
             # key && key.to_s

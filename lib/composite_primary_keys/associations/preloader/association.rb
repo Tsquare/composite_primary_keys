@@ -37,6 +37,18 @@ module ActiveRecord
               record[key_name].to_s.downcase.rstrip
             end.join(CompositePrimaryKeys::ID_SEP)
 
+            # Code requires Raven (Sentry to be setup) and handles the
+            # transliterated keys.
+            if !owners_map.has_key?(owner_key)
+              # Send error to Sentry for bad key
+              e = StandardError.new("#{owner_key} was not in map")
+              Raven.capture_exception(e)
+
+              # Add transliterated key
+              transliterate_keys(owners_map)
+              # Mutate the owner_key to the transliterated version
+              owner_key = I18n.transliterate(owner_key)
+            end
             owners_map[owner_key].each do |owner|
               records_by_owner[owner] << record
             end
@@ -56,6 +68,30 @@ module ActiveRecord
             key && key.join(CompositePrimaryKeys::ID_SEP)
           end
         end
+
+        # Takes the owners_map and adds all the transliterated versions
+        # of the keys to reference the same values. It will not allow transliterated
+        # keys to collid with an original key or another transliterated key. It
+        # mutates the owners map.
+        def transliterate_keys(owners_map)
+          transliterated_keys = {}
+          duplicated_keys = Set.new
+          owners_map.keys.each do |k|
+            transliterated_key = I18n.transliterate(k)
+            next if transliterated_key == k # No originals
+            if transliterated_keys.include?(transliterated_key)
+              duplicated_keys.add(transliterated_key)
+            elsif !owners_map.include?(transliterated_key)
+              transliterated_keys[transliterated_key] = owners_map[k]
+            end
+          end
+          duplicated_keys.each do |k|
+            transliterated_keys.delete(k)
+          end
+          owners_map.merge!(transliterated_keys)
+          transliterated_keys
+        end
+
       end
     end
   end

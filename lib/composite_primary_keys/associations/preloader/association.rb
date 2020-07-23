@@ -44,8 +44,9 @@ module ActiveRecord
               # Code requires Raven (Sentry to be setup) and handles the
               # transliterated keys.
               if !owners_map.has_key?(owner_key)
-                e = StandardError.new("#{owner_key} was not in map")
-                Raven.capture_exception(e)
+                # BEAC-3499 Squelch not in map errors
+                #e = StandardError.new("#{owner_key} was not in map")
+                #Raven.capture_exception(e)
 
                 # Add transliterated key
                 transliterate_keys(owners_map)
